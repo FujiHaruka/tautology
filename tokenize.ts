@@ -1,45 +1,85 @@
-interface TokenBase {
+export type Operator = {
+  type: "binary_operator";
+  associativity: "left" | "right";
+  priority: number;
+} | {
+  type: "unary_operator";
+  priority: number;
+};
+
+export type TokenType =
+  | "variable"
+  | "negation"
+  | "conjunction"
+  | "disjunction"
+  | "implication"
+  | "left_parenthesis"
+  | "right_parenthesis";
+
+export interface TokenRange {
   startAt: number;
   endAt: number;
 }
 
-export interface VariableToken extends TokenBase {
-  type: "variable";
+export type Token = {
+  type: "variable" | "left_parenthesis" | "right_parenthesis";
   value: string;
-}
+  range: TokenRange;
+} | {
+  type: "negation" | "conjunction" | "disjunction" | "implication";
+  value: string;
+  operator: Operator;
+  range: TokenRange;
+};
 
-export interface NegationToken extends TokenBase {
-  type: "negation";
-}
-
-export interface ConjunctionToken extends TokenBase {
-  type: "conjunction";
-}
-
-export interface DisjunctionToken extends TokenBase {
-  type: "disjunction";
-}
-
-export interface ImplicationToken extends TokenBase {
-  type: "implication";
-}
-
-export interface LeftParenthesisToken extends TokenBase {
-  type: "left_parenthesis";
-}
-
-export interface RightParenthesisToken extends TokenBase {
-  type: "right_parenthesis";
-}
-
-export type Token =
-  | VariableToken
-  | NegationToken
-  | ConjunctionToken
-  | DisjunctionToken
-  | ImplicationToken
-  | LeftParenthesisToken
-  | RightParenthesisToken;
+const Tokens = {
+  variable: {
+    type: "variable",
+  },
+  negation: {
+    type: "negation",
+    value: "NOT",
+    operator: {
+      type: "unary_operator",
+      priority: 3,
+    },
+  },
+  conjunction: {
+    type: "conjunction",
+    value: "AND",
+    operator: {
+      type: "binary_operator",
+      associativity: "left",
+      priority: 2,
+    },
+  },
+  disjunction: {
+    type: "disjunction",
+    value: "OR",
+    operator: {
+      type: "binary_operator",
+      associativity: "left",
+      priority: 2,
+    },
+  },
+  implication: {
+    type: "implication",
+    value: "->",
+    operator: {
+      type: "binary_operator",
+      associativity: "right",
+      priority: 1,
+    },
+  },
+  left_parenthesis: {
+    type: "left_parenthesis",
+    value: "(",
+  },
+  right_parenthesis: {
+    type: "right_parenthesis",
+    value: "(",
+  },
+} as const;
 
 const HeadChars = {
   SPACE: " ",
@@ -50,14 +90,6 @@ const HeadChars = {
   LEFT_PARENTHESIS: "(",
   RIGHT_PARENTHESIS: ")",
 };
-const TokenLengths = {
-  AND: 3,
-  OR: 2,
-  NOT: 3,
-  IMPLY: 2,
-  LEFT_PARENTHESIS: 1,
-  RIGHT_PARENTHESIS: 1,
-};
 
 class UnexpectedTokenError extends Error {
   constructor({ cursor }: { cursor: number }) {
@@ -65,59 +97,26 @@ class UnexpectedTokenError extends Error {
   }
 }
 
-export function variableToken(cursor: number, value: string): VariableToken {
+export function token(type: "variable", cursor: number, value: string): Token;
+export function token(
+  type: Exclude<TokenType, "variable">,
+  cursor: number,
+): Token;
+export function token(
+  type: TokenType,
+  cursor: number,
+  variableValue?: string,
+): Token {
+  const base = Tokens[type];
+  const value = base.type === "variable" ? variableValue! : base.value;
   return {
-    type: "variable",
+    ...Tokens[type],
     value,
-    startAt: cursor,
-    endAt: cursor + value.length,
+    range: {
+      startAt: cursor,
+      endAt: cursor + value.length,
+    },
   };
-}
-export function negationToken(cursor: number): NegationToken {
-  return {
-    type: "negation",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.NOT,
-  };
-}
-export function conjunctionToken(cursor: number): ConjunctionToken {
-  return {
-    type: "conjunction",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.AND,
-  };
-}
-export function disjunctionToken(cursor: number): DisjunctionToken {
-  return {
-    type: "disjunction",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.OR,
-  };
-}
-export function implicationToken(cursor: number): ImplicationToken {
-  return {
-    type: "implication",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.IMPLY,
-  };
-}
-export function leftParenthesisToken(cursor: number): LeftParenthesisToken {
-  return {
-    type: "left_parenthesis",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.LEFT_PARENTHESIS,
-  };
-}
-export function rightParenthesisToken(cursor: number): RightParenthesisToken {
-  return {
-    type: "right_parenthesis",
-    startAt: cursor,
-    endAt: cursor + TokenLengths.RIGHT_PARENTHESIS,
-  };
-}
-
-function isLowerCase(str: string): boolean {
-  return /^[a-z]$/.test(str);
 }
 
 export function tokenize(code: string): Token[] {
@@ -126,59 +125,54 @@ export function tokenize(code: string): Token[] {
 
   while (cursor < code.length) {
     const char = code.charAt(cursor);
+
+    let currentToken: Token;
     switch (char) {
       case HeadChars.SPACE:
         cursor++;
-        break;
+        continue;
       case HeadChars.LEFT_PARENTHESIS:
-        tokens.push(leftParenthesisToken(cursor));
-        cursor += TokenLengths.LEFT_PARENTHESIS;
+        currentToken = token("left_parenthesis", cursor);
         break;
       case HeadChars.RIGHT_PARENTHESIS:
-        tokens.push(rightParenthesisToken(cursor));
-        cursor += TokenLengths.RIGHT_PARENTHESIS;
+        currentToken = token("right_parenthesis", cursor);
         break;
       case HeadChars.NOT:
-        if (code.slice(cursor, cursor + 4) === "NOT ") {
-          tokens.push(negationToken(cursor));
-          cursor += TokenLengths.NOT;
+        if (code.slice(cursor, cursor + 4) === Tokens.negation.value + " ") {
+          currentToken = token("negation", cursor);
         } else {
           throw new UnexpectedTokenError({ cursor });
         }
         break;
       case HeadChars.AND:
-        if (code.slice(cursor, cursor + 4) === "AND ") {
-          tokens.push(conjunctionToken(cursor));
-          cursor += TokenLengths.AND;
+        if (code.slice(cursor, cursor + 4) === Tokens.conjunction.value + " ") {
+          currentToken = token("conjunction", cursor);
         } else {
           throw new UnexpectedTokenError({ cursor });
         }
         break;
       case HeadChars.OR:
-        if (code.slice(cursor, cursor + 3) === "OR ") {
-          tokens.push(disjunctionToken(cursor));
-          cursor += TokenLengths.OR;
+        if (code.slice(cursor, cursor + 3) === Tokens.disjunction.value + " ") {
+          currentToken = token("disjunction", cursor);
         } else {
           throw new UnexpectedTokenError({ cursor });
         }
         break;
       case HeadChars.IMPLY:
-        if (code.slice(cursor, cursor + 3) === "-> ") {
-          tokens.push(implicationToken(cursor));
-          cursor += TokenLengths.IMPLY;
+        if (code.slice(cursor, cursor + 3) === Tokens.implication.value + " ") {
+          currentToken = token("implication", cursor);
         } else {
           throw new UnexpectedTokenError({ cursor });
         }
         break;
       default:
-        if (isLowerCase(char)) {
+        if (/^[a-z]$/.test(char)) {
           // Easy logic but bad performance
           // FIXME: handle edge cases like "aaaAND"
           const match = code.slice(cursor).match(/^[a-z]+/);
           if (match) {
             const value = match[0];
-            tokens.push(variableToken(cursor, value));
-            cursor += value.length;
+            currentToken = token("variable", cursor, value);
           } else {
             throw new UnexpectedTokenError({ cursor });
           }
@@ -186,6 +180,9 @@ export function tokenize(code: string): Token[] {
           throw new UnexpectedTokenError({ cursor });
         }
     }
+
+    tokens.push(currentToken);
+    cursor += currentToken.value.length;
   }
 
   return tokens;
