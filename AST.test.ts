@@ -1,57 +1,38 @@
 import { assertEquals } from "https://deno.land/std@0.156.0/testing/asserts.ts";
 import { orderByRPN } from "./AST.ts";
-import { Token, token } from "./tokenize.ts";
+import { t, Token, TokenValue, v } from "./tokenize.ts";
 
 function fmt(tokens: Token[]) {
   return tokens.map((token) => token.value).join(" ");
 }
 
-Deno.test("AST / orderByRPN", () => {
-  // "a OR b"
-  assertEquals(
-    fmt(orderByRPN([
-      token("variable", 0, "a"),
-      token("disjunction", 0),
-      token("variable", 0, "b"),
-    ])),
-    "a b OR",
-  );
+function fromNormalizedFormula(formula: string): Token[] {
+  return formula.split(" ")
+    .filter(Boolean)
+    .map((value) => {
+      if (/^[a-z]+$/.test(value)) {
+        return v(value);
+      } else {
+        return t(value as TokenValue);
+      }
+    });
+}
 
-  // "a OR b -> c"
-  assertEquals(
-    fmt(orderByRPN([
-      token("variable", 0, "a"),
-      token("disjunction", 0),
-      token("variable", 0, "b"),
-      token("implication", 0),
-      token("variable", 0, "c"),
-    ])),
-    "a b OR c ->",
-  );
+const testsOrderByRPN: [string, string][] = [
+  ["", ""],
+  ["a", "a"],
+  ["a OR b", "a b OR"],
+  ["a OR b -> c", "a b OR c ->"],
+  ["a -> b OR c", "a b c OR ->"],
+  ["( a -> b ) OR c", "a b -> c OR"],
+  [
+    "( a AND b ) OR ( ( c AND d ) -> ( e AND f ) )",
+    "a b AND c d AND e f AND -> OR",
+  ],
+];
 
-  // "a -> b OR c"
-  assertEquals(
-    fmt(orderByRPN([
-      token("variable", 0, "a"),
-      token("implication", 0),
-      token("variable", 0, "b"),
-      token("disjunction", 0),
-      token("variable", 0, "c"),
-    ])),
-    "a b c OR ->",
-  );
-
-  // "(a -> b) OR c"
-  assertEquals(
-    fmt(orderByRPN([
-      token("left_parenthesis", 0),
-      token("variable", 0, "a"),
-      token("implication", 0),
-      token("variable", 0, "b"),
-      token("right_parenthesis", 0),
-      token("disjunction", 0),
-      token("variable", 0, "c"),
-    ])),
-    "a b -> c OR",
-  );
+testsOrderByRPN.forEach(([formula, expected]) => {
+  Deno.test(`orderByRPN with "${formula}"`, () => {
+    assertEquals(fmt(orderByRPN(fromNormalizedFormula(formula))), expected);
+  });
 });

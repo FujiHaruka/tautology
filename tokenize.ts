@@ -91,7 +91,7 @@ const Tokens = {
   },
   right_parenthesis: {
     type: "right_parenthesis",
-    value: "(",
+    value: ")",
   },
 } as const;
 
@@ -200,4 +200,22 @@ export function tokenize(code: string): Token[] {
   }
 
   return tokens;
+}
+
+// --- test utilities ---
+export type TokenValue = "NOT" | "AND" | "OR" | "->" | "(" | ")";
+/** Create variable token */
+export function v(value: string, cursor = 0) {
+  return token("variable", cursor, value);
+}
+/** Create token by alias */
+export function t(value: TokenValue, cursor = 0) {
+  const base = Object.values(Tokens).find((token) =>
+    (token as { value: string }).value === value
+  );
+  if (!base) {
+    throw new Error(`Unexpected value: "${value}"`);
+  }
+  const type = base.type as Exclude<TokenType, "variable">;
+  return token(type, cursor);
 }
