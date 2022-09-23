@@ -29,6 +29,12 @@ const testsOrderByRPN: [string, string][] = [
     "( a AND b ) OR ( ( c AND d ) -> ( e AND f ) )",
     "a b AND c d AND e f AND -> OR",
   ],
+  ["NOT a", "a NOT"],
+  ["NOT NOT NOT a", "a NOT NOT NOT"],
+  ["NOT ( NOT ( NOT a ) )", "a NOT NOT NOT"],
+  ["NOT a AND b", "a NOT b AND"],
+  ["a AND NOT b", "a b NOT AND"],
+  ["a AND NOT NOT ( b OR c )", "a b c OR NOT NOT AND"],
 ];
 
 testsOrderByRPN.forEach(([formula, expected]) => {

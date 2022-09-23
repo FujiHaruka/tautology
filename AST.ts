@@ -70,7 +70,7 @@ export function orderByRPN(tokens: Token[]): Token[] {
         break;
       }
       case "negation": {
-        // TODO:
+        stack.push(token);
         break;
       }
       // binary operator
@@ -80,17 +80,23 @@ export function orderByRPN(tokens: Token[]): Token[] {
         let top: UnknownToken | undefined = stack.top;
         while (
           (
-            // top token is a binary operator
+              // top token is a binary operator
+              top &&
+              top.operator &&
+              top.operator.type === "binary_operator"
+            ) &&
+            (
+              // token is left associativity and priority is less than or equal to top
+              token.operator.associativity === "left" &&
+                token.operator.priority <= top.operator.priority ||
+              // token's priority is less than top
+              token.operator.priority < top.operator.priority
+            ) ||
+          (
+            // top token is an unary operator, which is high prioritized
             top &&
             top.operator &&
-            top.operator.type === "binary_operator"
-          ) &&
-          (
-            // token is left associativity and priority is less than or equal to top
-            token.operator.associativity === "left" &&
-              token.operator.priority <= top.operator.priority ||
-            // token's priority is less than top
-            token.operator.priority < top.operator.priority
+            top.operator.type === "unary_operator"
           )
         ) {
           const popped = stack.popForce();
