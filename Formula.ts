@@ -79,8 +79,22 @@ export class Formula {
   isTautology(): boolean {
     const { variables } = this;
 
-    // All patterns of variable values
-    // TODO: implement
+    if (variables.length > 50) {
+      throw new Error(`Max acceptable variables are 50`);
+    }
+
+    const bitLimit = 1 << variables.length;
+    for (let bit = 0; bit < bitLimit; bit++) {
+      const values: Record<string, boolean> = {};
+      for (let i = 0; i < variables.length; i++) {
+        const mask = 1 << i;
+        values[variables[i]] = Boolean(bit & mask);
+      }
+
+      if (!this.estimate(values)) {
+        return false;
+      }
+    }
 
     return true;
   }

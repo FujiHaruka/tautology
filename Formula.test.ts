@@ -42,3 +42,28 @@ testsEstimate.forEach(([code, variables, expected]) => {
     assertEquals(formula.estimate(variables), expected);
   });
 });
+
+const testsTautology: [string, boolean][] = [
+  ["a -> (b -> a)", true],
+  ["(a -> (b -> c)) -> ((a -> b) -> (a -> c))", true],
+  ["(a AND b) -> a", true],
+  ["(a AND b) -> b", true],
+  ["a -> (b -> (a AND b))", true],
+  ["a -> a OR b", true],
+  ["b -> a OR b", true],
+  ["(a -> b) -> ((c -> b) -> (a OR c -> b))", true],
+  ["(a -> b) -> ((a -> NOT b) -> NOT a)", true],
+  ["a -> (NOT a -> b)", true],
+  ["a OR NOT a", true],
+
+  ["a AND NOT a", false],
+  ["a -> b", false],
+  ["(a OR b) -> a", false],
+];
+
+testsTautology.forEach(([code, expected]) => {
+  Deno.test(`Formula / isTautology "${code}" is ${expected ? "tautology" : "not tautology"}`, () => {
+    const formula = Formula.parse(code);
+    assertEquals(formula.isTautology(), expected);
+  });
+});
