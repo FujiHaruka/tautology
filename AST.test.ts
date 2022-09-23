@@ -46,54 +46,54 @@ testsOrderByRPN.forEach(([formula, expected]) => {
 });
 
 const testsParseAST: [string, Node][] = [
-  ["a", { nodeType: "variable", token: v("a") }],
+  ["a", { nodeType: "variable_node", token: v("a") }],
   ["a OR b", {
-    nodeType: "binary_operator",
+    nodeType: "binary_operator_node",
     token: t("OR"),
     left: {
-      nodeType: "variable",
+      nodeType: "variable_node",
       token: v("a"),
     },
     right: {
-      nodeType: "variable",
+      nodeType: "variable_node",
       token: v("b"),
     },
   }],
   ["a AND NOT b -> ( c -> d OR e )", {
-    nodeType: "binary_operator",
+    nodeType: "binary_operator_node",
     token: t("->"),
     left: {
-      nodeType: "binary_operator",
+      nodeType: "binary_operator_node",
       token: t("AND"),
       left: {
-        nodeType: "variable",
+        nodeType: "variable_node",
         token: v("a"),
       },
       right: {
-        nodeType: "unary_operator",
+        nodeType: "unary_operator_node",
         token: t("NOT"),
         target: {
-          nodeType: "variable",
+          nodeType: "variable_node",
           token: v("b"),
         },
       },
     },
     right: {
-      nodeType: "binary_operator",
+      nodeType: "binary_operator_node",
       token: t("->"),
       left: {
-        nodeType: "variable",
+        nodeType: "variable_node",
         token: v("c"),
       },
       right: {
-        nodeType: "binary_operator",
+        nodeType: "binary_operator_node",
         token: t("OR"),
         left: {
-          nodeType: "variable",
+          nodeType: "variable_node",
           token: v("d"),
         },
         right: {
-          nodeType: "variable",
+          nodeType: "variable_node",
           token: v("e"),
         },
       },

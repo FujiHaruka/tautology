@@ -11,21 +11,21 @@ import {
 import { Stack } from "./utils.ts";
 
 export type NodeType =
-  | "variable"
-  | "unary_operator"
-  | "binary_operator";
+  | "variable_node"
+  | "unary_operator_node"
+  | "binary_operator_node";
 
 export interface VariableNode {
-  nodeType: "variable";
+  nodeType: "variable_node";
   token: VariableToken;
 }
 export interface UnaryOperatorNode {
-  nodeType: "unary_operator";
+  nodeType: "unary_operator_node";
   target: Node;
   token: UnaryOperatorToken;
 }
 export interface BinaryOperatorNode {
-  nodeType: "binary_operator";
+  nodeType: "binary_operator_node";
   left: Node;
   right: Node;
   token: BinaryOperatorToken;
@@ -128,11 +128,11 @@ export function parseAST(tokens: Token[]): Node {
 
   for (const token of orderedTokens) {
     if (isVariableToken(token)) {
-      stack.push({ nodeType: "variable", token });
+      stack.push({ nodeType: "variable_node", token });
     } else if (isUnaryOperatorToken(token)) {
       const target = stack.popForce();
       const node: UnaryOperatorNode = {
-        nodeType: "unary_operator",
+        nodeType: "unary_operator_node",
         token,
         target,
       };
@@ -141,7 +141,7 @@ export function parseAST(tokens: Token[]): Node {
       const right = stack.popForce();
       const left = stack.popForce();
       const node: BinaryOperatorNode = {
-        nodeType: "binary_operator",
+        nodeType: "binary_operator_node",
         token,
         left,
         right,
