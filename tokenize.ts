@@ -1,11 +1,13 @@
-export type Operator = {
+export interface BinaryOperator {
   type: "binary_operator";
   associativity: "left" | "right";
   priority: number;
-} | {
+}
+
+export interface UnaryOperator {
   type: "unary_operator";
   priority: number;
-};
+}
 
 export type TokenType =
   | "variable"
@@ -26,11 +28,23 @@ export type Token = {
   value: string;
   range: TokenRange;
 } | {
-  type: "negation" | "conjunction" | "disjunction" | "implication";
+  type: "negation";
   value: string;
-  operator: Operator;
+  operator: UnaryOperator;
+  range: TokenRange;
+} | {
+  type: "conjunction" | "disjunction" | "implication";
+  value: string;
+  operator: BinaryOperator;
   range: TokenRange;
 };
+
+export interface UnknownToken {
+  type: TokenType;
+  value: string;
+  operator?: UnaryOperator | BinaryOperator;
+  range: TokenRange;
+}
 
 const Tokens = {
   variable: {

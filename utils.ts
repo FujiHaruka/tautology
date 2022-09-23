@@ -13,6 +13,15 @@ export class Stack<T> {
     return this.items.pop();
   }
 
+  popForce(): T {
+    const item = this.pop();
+    if (!item) {
+      throw new Error("Unexpected no item in stack");
+    }
+
+    return item;
+  }
+
   popAll(): T[] {
     const { items } = this;
     this.items = [];
