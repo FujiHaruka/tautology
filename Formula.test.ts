@@ -55,6 +55,7 @@ const testsTautology: [string, boolean][] = [
   ["(a -> b) -> ((a -> NOT b) -> NOT a)", true],
   ["a -> (NOT a -> b)", true],
   ["a OR NOT a", true],
+  ["((a -> b) -> (NOT a OR b)) AND ((NOT a OR b) -> (a -> b))", true],
 
   ["a AND NOT a", false],
   ["a -> b", false],
