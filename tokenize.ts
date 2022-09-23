@@ -23,21 +23,34 @@ export interface TokenRange {
   endAt: number;
 }
 
-export type Token = {
-  type: "variable" | "left_parenthesis" | "right_parenthesis";
+export interface VariableToken {
+  type: "variable";
   value: string;
   range: TokenRange;
-} | {
+}
+export interface ParenthesisToken {
+  type: "left_parenthesis" | "right_parenthesis";
+  value: string;
+  range: TokenRange;
+}
+export interface UnaryOperatorToken {
   type: "negation";
   value: string;
   operator: UnaryOperator;
   range: TokenRange;
-} | {
+}
+export interface BinaryOperatorToken {
   type: "conjunction" | "disjunction" | "implication";
   value: string;
   operator: BinaryOperator;
   range: TokenRange;
-};
+}
+
+export type Token =
+  | VariableToken
+  | ParenthesisToken
+  | UnaryOperatorToken
+  | BinaryOperatorToken;
 
 export interface UnknownToken {
   type: TokenType;
@@ -111,11 +124,15 @@ class UnexpectedTokenError extends Error {
   }
 }
 
-export function token(type: "variable", cursor: number, value: string): Token;
+export function token(
+  type: "variable",
+  cursor: number,
+  value: string,
+): VariableToken;
 export function token(
   type: Exclude<TokenType, "variable">,
   cursor: number,
-): Token;
+): UnaryOperatorToken | BinaryOperatorToken | ParenthesisToken;
 export function token(
   type: TokenType,
   cursor: number,
@@ -202,14 +219,43 @@ export function tokenize(code: string): Token[] {
   return tokens;
 }
 
+// --- utilities ---
+
+export function isVariableToken(token: UnknownToken): token is VariableToken {
+  return token.type === "variable";
+}
+export function isUnaryOperatorToken(
+  token: UnknownToken,
+): token is UnaryOperatorToken {
+  return token.operator?.type === "unary_operator";
+}
+export function isBinaryOperatorToken(
+  token: UnknownToken,
+): token is BinaryOperatorToken {
+  return token.operator?.type === "binary_operator";
+}
+
 // --- test utilities ---
 export type TokenValue = "NOT" | "AND" | "OR" | "->" | "(" | ")";
 /** Create variable token */
-export function v(value: string, cursor = 0) {
+export function v(value: string, cursor = NaN): VariableToken {
   return token("variable", cursor, value);
 }
 /** Create token by alias */
-export function t(value: TokenValue, cursor = 0) {
+export function t(value: "NOT", cursor?: number): UnaryOperatorToken;
+export function t(
+  value: "OR" | "AND" | "->",
+  cursor?: number,
+): BinaryOperatorToken;
+export function t(value: "(" | ")", cursor?: number): ParenthesisToken;
+export function t(
+  value: TokenValue,
+  cursor?: number,
+): UnaryOperatorToken | BinaryOperatorToken | ParenthesisToken;
+export function t(
+  value: TokenValue,
+  cursor = NaN,
+): UnaryOperatorToken | BinaryOperatorToken | ParenthesisToken {
   const base = Object.values(Tokens).find((token) =>
     (token as { value: string }).value === value
   );

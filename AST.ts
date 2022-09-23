@@ -1,43 +1,40 @@
-import type { Token, UnknownToken } from "./tokenize.ts";
+import {
+  BinaryOperatorToken,
+  isBinaryOperatorToken,
+  isUnaryOperatorToken,
+  isVariableToken,
+  Token,
+  UnaryOperatorToken,
+  UnknownToken,
+  VariableToken,
+} from "./tokenize.ts";
 import { Stack } from "./utils.ts";
 
 export type NodeType =
   | "variable"
-  | "negation"
-  | "conjunction"
-  | "disjunction"
-  | "implication";
+  | "unary_operator"
+  | "binary_operator";
 
 export interface VariableNode {
-  type: "variable";
-  value: string;
+  nodeType: "variable";
+  token: VariableToken;
 }
-export interface NegationNode {
-  type: "negation";
+export interface UnaryOperatorNode {
+  nodeType: "unary_operator";
   target: Node;
+  token: UnaryOperatorToken;
 }
-export interface ConjunctionNode {
-  type: "conjunction";
+export interface BinaryOperatorNode {
+  nodeType: "binary_operator";
   left: Node;
   right: Node;
-}
-export interface DisjucntionNode {
-  type: "disjunction";
-  left: Node;
-  right: Node;
-}
-export interface ImplicationNode {
-  type: "implication";
-  left: Node;
-  right: Node;
+  token: BinaryOperatorToken;
 }
 
 export type Node =
   | VariableNode
-  | NegationNode
-  | ConjunctionNode
-  | DisjucntionNode
-  | ImplicationNode;
+  | UnaryOperatorNode
+  | BinaryOperatorNode;
 
 /** Order tokens by Reverse Polish Notation, RPN */
 export function orderByRPN(tokens: Token[]): Token[] {
@@ -123,4 +120,38 @@ export function orderByRPN(tokens: Token[]): Token[] {
   }
 
   return output.concat(rest);
+}
+
+export function parseAST(tokens: Token[]): Node {
+  const orderedTokens = orderByRPN(tokens);
+  const stack = new Stack<Node>();
+
+  for (const token of orderedTokens) {
+    if (isVariableToken(token)) {
+      stack.push({ nodeType: "variable", token });
+    } else if (isUnaryOperatorToken(token)) {
+      const target = stack.popForce();
+      const node: UnaryOperatorNode = {
+        nodeType: "unary_operator",
+        token,
+        target,
+      };
+      stack.push(node);
+    } else if (isBinaryOperatorToken(token)) {
+      const right = stack.popForce();
+      const left = stack.popForce();
+      const node: BinaryOperatorNode = {
+        nodeType: "binary_operator",
+        token,
+        left,
+        right,
+      };
+      stack.push(node);
+    } else {
+      // never
+      throw new Error("Unexpected token");
+    }
+  }
+
+  return stack.popForce();
 }
